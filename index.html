@@ -188,8 +188,6 @@
         // System messages (join/leave)
         socket.on('system message', (text) => addMessage(`<em>${text}</em>`, 'system'));
 
-        // Connection handling
-        socket.on('disconnect', () => addMessage('<em>Disconnected</em>', 'system'));
     </script>
 </body>
 
