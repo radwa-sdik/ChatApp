@@ -189,7 +189,6 @@
         socket.on('system message', (text) => addMessage(`<em>${text}</em>`, 'system'));
 
         // Connection handling
-        socket.on('connect', () => addMessage('<em>Connected to server</em>', 'system'));
         socket.on('disconnect', () => addMessage('<em>Disconnected</em>', 'system'));
     </script>
 </body>

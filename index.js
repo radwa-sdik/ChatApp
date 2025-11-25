@@ -18,8 +18,10 @@ io.on('connection', (socket) => {
 
     // When a client sets its username
     socket.on('set username', (username, ack) => {
-        users.set(socket.id, username);
-        socket.broadcast.emit('system message', `${username} joined the chat`);
+        const name = username.trim()
+        users.set(socket.id, name);
+        socket.broadcast.emit('system message', `${name} joined the chat`);
+        ack && ack({ ok: true, name });
     });
 
     // When a client sends a chat message
@@ -27,6 +29,7 @@ io.on('connection', (socket) => {
         const name = users.get(socket.id) || 'Anonymous';
         const payload = { id: socket.id, name, msg, ts: Date.now() };
         io.emit('chat message', payload);
+        ack && ack({ ok: true });
     });
 
     socket.on('disconnect', (reason) => {
@@ -35,6 +38,7 @@ io.on('connection', (socket) => {
             users.delete(socket.id);
             socket.broadcast.emit('system message', `${name} left the chat`);
         }
+        console.log('user disconnected', socket.id, reason);
     });
 });
 
