@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Simple Socket.IO Chat</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            background: #f7f7f7;
+        }
+
+        #app {
+            max-width: 720px;
+            margin: 18px auto;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 36px);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, .08);
+        }
+
+        header {
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        #userBox input {
+            padding: 6px;
+        }
+
+        #chat {
+            flex: 1;
+            overflow: auto;
+            padding: 12px;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #messages li {
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            max-width: 80%;
+        }
+
+        #messages li.system {
+            background: #fffbe6;
+            color: #7a6b00;
+            text-align: center;
+            margin: 8px auto;
+            max-width: 90%;
+        }
+
+        #messages li.mine {
+            margin-left: auto;
+            background: #e6f7ff;
+        }
+
+        #messages li:not(.system):not(.mine) {
+            background: #f1f1f1;
+        }
+
+        footer {
+            padding: 10px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+        }
+
+        footer input {
+            flex: 1;
+            padding: 8px;
+        }
+
+        footer button,
+        #setNameBtn {
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <header>
+            <h1>Live Chat</h1>
+            <div id="userBox">
+                <input id="username" placeholder="Choose a username" maxlength="30" />
+                <button id="setNameBtn">Set</button>
+            </div>
+        </header>
+
+        <main id="chat">
+            <ul id="messages"></ul>
+        </main>
+
+        <footer>
+            <input id="messageInput" placeholder="Type a message..." maxlength="1000" />
+            <button id="sendBtn">Send</button>
+        </footer>
+    </div>
+
+    <!-- Socket.IO client is served automatically at /socket.io/socket.io.js -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io(); // connects to same host that served the page
+
+        // DOM elements
+        const messagesEl = document.getElementById('messages');
+        const msgInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const usernameInput = document.getElementById('username');
+        const setNameBtn = document.getElementById('setNameBtn');
+
+        let myName = null;
+
+        function addMessage(content, cls = '') {
+            const li = document.createElement('li');
+            if (cls) li.className = cls;
+            li.innerHTML = content;
+            messagesEl.appendChild(li);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // Set username
+        setNameBtn.addEventListener('click', () => {
+            const name = usernameInput.value.trim();
+            if (!name) return alert('Enter a username');
+            socket.emit('set username', name, (res) => {
+                if (res && res.ok) {
+                    myName = res.name;
+                    usernameInput.disabled = true;
+                    setNameBtn.disabled = true;
+                    addMessage(`<em>You are now <strong>${myName}</strong></em>`, 'system');
+                } else {
+                    alert(res && res.error ? res.error : 'Failed to set username');
+                }
+            });
+        });
+
+        // Send message
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+            socket.emit('chat message', text, (res) => {
+                if (res && res.ok) {
+                    msgInput.value = '';
+                } else {
+                    alert(res && res.error ? res.error : 'Could not send');
+                }
+            });
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        msgInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Receive chat messages
+        socket.on('chat message', (payload) => {
+            const time = new Date(payload.ts).toLocaleTimeString();
+            const mine = payload.id === socket.id;
+            addMessage(`<strong>${payload.name}</strong> <small>${time}</small><div>${payload.msg}</div>`, mine ? 'mine' : '');
+        });
+
+        // System messages (join/leave)
+        socket.on('system message', (text) => addMessage(`<em>${text}</em>`, 'system'));
+
+        // Connection handling
+        socket.on('connect', () => addMessage('<em>Connected to server</em>', 'system'));
+        socket.on('disconnect', () => addMessage('<em>Disconnected</em>', 'system'));
+    </script>
+</body>
+
+</html>
