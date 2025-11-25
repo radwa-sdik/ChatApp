@@ -126,8 +126,6 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io(); // connects to same host that served the page
-
-        // DOM elements
         const messagesEl = document.getElementById('messages');
         const msgInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -149,14 +147,10 @@
             const name = usernameInput.value.trim();
             if (!name) return alert('Enter a username');
             socket.emit('set username', name, (res) => {
-                if (res && res.ok) {
-                    myName = res.name;
-                    usernameInput.disabled = true;
-                    setNameBtn.disabled = true;
-                    addMessage(`<em>You are now <strong>${myName}</strong></em>`, 'system');
-                } else {
-                    alert(res && res.error ? res.error : 'Failed to set username');
-                }
+            myName = res.name;
+            usernameInput.disabled = true;
+            setNameBtn.disabled = true;
+            addMessage(`<em>You are now <strong>${myName}</strong></em>`, 'system');
             });
         });
 
@@ -164,13 +158,8 @@
         function sendMessage() {
             const text = msgInput.value.trim();
             if (!text) return;
-            socket.emit('chat message', text, (res) => {
-                if (res && res.ok) {
-                    msgInput.value = '';
-                } else {
-                    alert(res && res.error ? res.error : 'Could not send');
-                }
-            });
+            socket.emit('chat message', text)
+            msgInput.value = '';
         }
 
         sendBtn.addEventListener('click', sendMessage);
